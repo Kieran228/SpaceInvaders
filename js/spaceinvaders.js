@@ -41,6 +41,9 @@ let alienVelocityX = 1; //? alien moving speed
 let bulletArray = [];
 let bulletVelocityY = -10; //? bullet moving speed
 
+let score = 0;
+let gameOver = false;
+
 window.onload = function() {
     board = document.getElementById("board");
     board.width = boardWidth;
@@ -69,6 +72,10 @@ window.onload = function() {
 function update() {
     requestAnimationFrame(update);
 
+    if (gameOver) {
+        return;
+    }
+
     context.clearRect(0, 0, board.width, board.height);
 
     //* draw ship over and over per frame
@@ -90,9 +97,13 @@ function update() {
                     alienArray[j].y += alienHeight;
                 }
             }
-            context.drawImage(alienIMG, alien.x, alien.y, alien.width, alien.height)
+            context.drawImage(alienIMG, alien.x, alien.y, alien.width, alien.height);
+
+            if (alien.y >= ship.y) {
+                gameOver = true;
+            }
         }
-    }
+    };
 
     //* bullets
     for (let i = 0; i < bulletArray.length; i++) {
@@ -108,17 +119,38 @@ function update() {
                 bullet.used = true;
                 alien.alive = false;
                 alienCount--;
+                score += 100;
             }
         }
-    }
+    };
 
-    //* clear bullets
-    while (bulletArray.length > 0 && bulletArray[0].used || bulletArray[0].y < 0) {
-        bulletArray.shift; //? removes the first element of the array (extra bullets)
-    }
+    //* clear bullets when they go passed the top axis
+    while (bulletArray.length > 0 && (bulletArray[0].used || bulletArray[0].y < 0)) {
+        bulletArray.shift(); //? removes the first element of the array (extra bullets)
+    };
+
+    //* next level
+    if (alienCount == 0) {
+        //todo increase the number of aliens in columns and rows by 1
+        alienColumns = Math.min(alienColumns + 1, columns/2 - 2);
+        alienRows = Math.min(alienRows + 1, rows - 4); //? capped at 10-4 = 12 (at most 12 rows of aliens)
+        alienVelocityX += 0.2; //? increases the alien movement speed for every level
+        alienArray = [];
+        bulletArray = [];
+        createAliens();
+    };
+
+    //* score
+    context.fillStyle = "white";
+    context.font = "16px courier";
+    context.fillText(score, 5, 20);
 };
 
 function moveShip(e) {
+    if (gameOver) {
+        return;
+    }
+
     if (e.code == "ArrowLeft" && ship.x - shipVelocityX >= 0) {
         ship.x -= shipVelocityX //* move left
     }
@@ -145,6 +177,10 @@ function createAliens() {
 };
 
 function shoot(e) {   
+    if (gameOver) {
+        return;
+    }
+
     if (e.code == "Space") {
         let bullet = {
             x : ship.x + shipWidth * 15/32,
