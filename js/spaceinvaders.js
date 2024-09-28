@@ -63,6 +63,7 @@ window.onload = function() {
 
     requestAnimationFrame(update);
     document.addEventListener("keydown", moveShip);
+    document.addEventListener("keyup", shoot);
 };
 
 function update() {
@@ -92,6 +93,29 @@ function update() {
             context.drawImage(alienIMG, alien.x, alien.y, alien.width, alien.height)
         }
     }
+
+    //* bullets
+    for (let i = 0; i < bulletArray.length; i++) {
+        let bullet = bulletArray[i];
+        bullet.y += bulletVelocityY;
+        context.fillStyle = "white";
+        context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height)
+
+        //* bullet collision with aliens
+        for (let j = 0; j < alienArray.length; j++) {
+            let alien = alienArray[j];
+            if (!bullet.used && alien.alive && detectCollision(bullet, alien)) {
+                bullet.used = true;
+                alien.alive = false;
+                alienCount--;
+            }
+        }
+    }
+
+    //* clear bullets
+    while (bulletArray.length > 0 && bulletArray[0].used || bulletArray[0].y < 0) {
+        bulletArray.shift; //? removes the first element of the array (extra bullets)
+    }
 };
 
 function moveShip(e) {
@@ -118,4 +142,24 @@ function createAliens() {
         }
     }
     alienCount = alienArray.length;
+};
+
+function shoot(e) {   
+    if (e.code == "Space") {
+        let bullet = {
+            x : ship.x + shipWidth * 15/32,
+            y : ship.y,
+            width : tileSize/8,
+            height : tileSize/2,
+            used : false
+        }
+        bulletArray.push(bullet);
+    }
+};
+
+function detectCollision(a, b) {
+    return a.x < b.x + b.width &&   //? a's top left corner doesnt reach b's top right corner
+           a.x + a.width > b.x &&   //? a's top right corner passes b's top left corner
+           a.y < b.y + b.height &&  //? a's top left corner doesn't reach b's bottom left corner
+           a.y + a.height > b.y     //? a's bottom left corner passes b's top left corner
 };
